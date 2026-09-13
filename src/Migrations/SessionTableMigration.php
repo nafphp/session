@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace NixPHP\Session\Migrations;
+namespace Naf\Session\Migrations;
 
-use NixPHP\Database\Core\AbstractMigration;
+use Naf\Database\Core\AbstractMigration;
 use PDO;
 use PDOException;
 

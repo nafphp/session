@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace NixPHP\Session\Storage;
+namespace Naf\Session\Storage;
 
 use PDO;
 use PDOException;
 use SessionHandlerInterface;
-use function NixPHP\log;
+use function Naf\log;
 
 /**
  * Session handler backed by a sessions table.
@@ -76,7 +76,7 @@ class DatabaseSessionHandler implements SessionHandlerInterface
 
             return (string)($result[$this->columns['payload']] ?? '');
         } catch (PDOException $e) {
-            \NixPHP\log()->error($e->getMessage());
+            \Naf\log()->error($e->getMessage());
             return '';
         }
     }

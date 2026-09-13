@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use NixPHP\Database\Core\Database;
-use NixPHP\Database\Support\MigrationRegistry;
-use NixPHP\Session\Core\Session;
-use NixPHP\Session\Storage\DatabaseSessionHandler;
-use function NixPHP\app;
-use function NixPHP\config;
-use function NixPHP\Session\session;
-use function NixPHP\log;
+use Naf\Database\Core\Database;
+use Naf\Database\Support\MigrationRegistry;
+use Naf\Session\Core\Session;
+use Naf\Session\Storage\DatabaseSessionHandler;
+use function Naf\app;
+use function Naf\config;
+use function Naf\Session\session;
+use function Naf\log;
 
 $container = app()->container();
 
@@ -26,8 +26,8 @@ $container->set(Session::class, function () use ($container) {
     if (
         $storage === 'database'
     ) {
-        if (!app()->hasPlugin('nixphp/database')) {
-            log()->warning('You\'ve configured to use the database as the session storage but the plugin nixphp/database is missing.');
+        if (!app()->hasPlugin('naf/database')) {
+            log()->warning('You\'ve configured to use the database as the session storage but the plugin naf/database is missing.');
             return $session;
         }
         
@@ -44,7 +44,7 @@ $container->set(Session::class, function () use ($container) {
     return $session;
 });
 
-if (app()->hasPlugin('nixphp/database')) {
+if (app()->hasPlugin('naf/database')) {
     MigrationRegistry::addPath(__DIR__ . '/src/Migrations');
 }
 

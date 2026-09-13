@@ -1,9 +1,9 @@
 {
-  "name": "nixphp/session",
-  "description": "NixPHP Session Plugin for storing data across requests.",
+  "name": "naf/session",
+  "description": "NAF Session Plugin for storing data across requests.",
   "minimum-stability": "stable",
   "license": "MIT",
-  "type": "nixphp-plugin",
+  "type": "naf-plugin",
   "authors": [
     {
       "name": "Flo Knapp",
@@ -12,8 +12,7 @@
   ],
   "autoload": {
     "psr-4": {
-      "NixPHP\\Session\\": "src/",
-      "NixPHP\\Database\\": "src/Database/"
+      "Naf\\Session\\": "src/"
     }
   },
   "autoload-dev": {
@@ -23,14 +22,14 @@
   },
   "require": {
     "php": ">=8.3",
-    "nixphp/framework": "^0.1.0"
+    "naf/framework": "^0.2"
   },
   "require-dev": {
     "phpunit/phpunit": "^12.1",
     "phpunit/php-code-coverage": "^12.1"
   },
   "suggest": {
-    "nixphp/database": "Install to use the database-backed session storage handler."
+    "naf/database": "Install to use the database-backed session storage handler."
   },
   "scripts": {
     "test": "phpunit --colors=always"

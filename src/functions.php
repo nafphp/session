@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace NixPHP\Session;
+namespace Naf\Session;
 
-use NixPHP\Session\Core\Session;
-use function NixPHP\app;
+use Naf\Session\Core\Session;
+use function Naf\app;
 
 function session(): Session
 {

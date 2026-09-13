@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use NixPHP\Session\Core\Session;
-use NixPHP\Session\Storage\DatabaseSessionHandler;
+use Naf\Session\Core\Session;
+use Naf\Session\Storage\DatabaseSessionHandler;
 use PDO;
-use Tests\NixPHPTestCase;
-use function NixPHP\Session\session;
+use Tests\NafTestCase;
+use function Naf\Session\session;
 
-class SessionTest extends NixPHPTestCase
+class SessionTest extends NafTestCase
 {
 
     protected function setUp(): void

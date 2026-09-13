@@ -1,6 +1,6 @@
 <?php
 
-use function NixPHP\Session\session;
+use function Naf\Session\session;
 
 if (!defined('BASE_PATH')) {
     define('BASE_PATH', __DIR__ . '/Fixtures');

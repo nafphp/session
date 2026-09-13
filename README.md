@@ -1,22 +1,22 @@
 <div align="center" style="text-align: center;">
 
-![Logo](https://nixphp.github.io/docs/assets/nixphp-logo-small-square.png)
+![NAF](assets/naf-logo-small-square.png)
 
-[![NixPHP Session Plugin](https://github.com/nixphp/session/actions/workflows/php.yml/badge.svg)](https://github.com/nixphp/session/actions/workflows/php.yml)
+[![NAF Session Plugin](https://github.com/nafphp/session/actions/workflows/php.yml/badge.svg)](https://github.com/nafphp/session/actions/workflows/php.yml)
 
 </div>
 
-[← Back to NixPHP](https://github.com/nixphp/framework)
+[← Back to NAF](https://github.com/nafphp/framework)
 
 ---
 
-# nixphp/session
+# naf/session
 
-> **Simple session management for NixPHP, with flash message support built-in.**
+> **Simple session management for NAF, with flash message support built-in.**
 
-This plugin adds a lightweight session layer to your NixPHP app, starts sessions safely in HTTP requests, and exposes helpers so you can store data (including flash messages) without worrying about headers or manual initialization.
+This plugin adds a lightweight session layer to your NAF app, starts sessions safely in HTTP requests, and exposes helpers so you can store data (including flash messages) without worrying about headers or manual initialization.
 
-> 🧩 Part of the official NixPHP plugin collection.
+> 🧩 Part of the official NAF plugin collection.
 > Install it when you need session persistence, and nothing else.
 
 ---
@@ -27,18 +27,18 @@ This plugin adds a lightweight session layer to your NixPHP app, starts sessions
 * Safeguards cookie params (secure/HttpOnly/SameSite) and regenerates IDs on demand
 * Flash message helpers (`flash`, `getFlash`)
 * `session()` helper bound in the container
-* Optional database-backed storage when `nixphp/database` is installed
-* Registers the migration path so `vendor/bin/nix migrate up/down` can create the sessions table (requires `nixphp/cli`)
+* Optional database-backed storage when `naf/database` is installed
+* Registers the migration path so `vendor/bin/nix migrate up/down` can create the sessions table (requires `naf/cli`)
 
 ---
 
 ## 📥 Installation
 
 ```bash
-composer require nixphp/session
+composer require naf/session
 ```
 
-Once installed, the plugin is autoloaded and ready to use. If you install `nixphp/database` too, it can store sessions in your database table instead of native PHP files.
+Once installed, the plugin is autoloaded and ready to use. If you install `naf/database` too, it can store sessions in your database table instead of native PHP files.
 
 ---
 
@@ -89,7 +89,7 @@ The message is then **automatically removed** after it has been read.
 * Flash data is stored in a dedicated key and removed after access.
 * Registers the `session()` helper and binds it in the service container.
 * Provides `DatabaseSessionHandler` when the database plugin is configured.
-* Registers the migration path with `nixphp/database` so `vendor/bin/nix migrate up/down` applies the session table changes.
+* Registers the migration path with `naf/database` so `vendor/bin/nix migrate up/down` applies the session table changes.
 
 ---
 
@@ -100,7 +100,7 @@ The message is then **automatically removed** after it has been read.
 ```php
 return [
     'session' => [
-        'storage'             => 'default', // switch to 'database' when using nixphp/database
+        'storage'             => 'default', // switch to 'database' when using naf/database
         'trust_proxy_headers' => false,
         'trusted_proxies'     => [],
         'database_table'      => 'sessions',
@@ -110,9 +110,9 @@ return [
 
 To use the database handler:
 
-1. Install [nixphp/database](https://github.com/nixphp/database) and configure its `database` settings.
+1. Install [naf/database](https://github.com/nafphp/database) and configure its `database` settings.
 2. Update the `session` config’s `storage` key to `database`.
-3. Run `vendor/bin/nix migrate up` (requires `nixphp/cli`) to apply the migration that creates the sessions table.
+3. Run `vendor/bin/nix migrate up` (requires `naf/cli`) to apply the migration that creates the sessions table.
 
 ## 🛠 Optional Usage in Controllers
 
@@ -129,8 +129,8 @@ But using the `session()` helper is the recommended way.
 
 ## ✅ Requirements
 
-* `nixphp/framework` >= 0.1.0
-* `nixphp/database` >= 0.1.1 when enabling database session storage
+* `naf/framework` >= 0.1.0
+* `naf/database` >= 0.1.1 when enabling database session storage
 * MySQL >= 8.0.19 (required when using the database-backed handler)
 
 ---
