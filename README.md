@@ -19,122 +19,20 @@ This plugin adds a lightweight session layer to your NAF app, starts sessions sa
 > 🧩 Part of the official NAF plugin collection.
 > Install it when you need session persistence, and nothing else.
 
----
+## Documentation
 
-## 📦 Features
+**[Sessions →](https://nafphp.github.io/docs/sessions/)**
 
-* Starts PHP sessions automatically (skipping CLI)
-* Safeguards cookie params (secure/HttpOnly/SameSite) and regenerates IDs on demand
-* Flash message helpers (`flash`, `getFlash`)
-* `session()` helper bound in the container
-* Optional database-backed storage when `naf/database` is installed
-* Registers the migration path so `vendor/bin/nix migrate up/down` can create the sessions table (requires `naf/cli`)
+Everything about this package — what it does, how it is configured and what it needs — lives
+in the [NAF documentation](https://nafphp.github.io/docs/). Not sure which packages you need?
+[Start here](https://nafphp.github.io/docs/choosing-packages/).
 
----
-
-## 📥 Installation
+## Install
 
 ```bash
 composer require naf/session
 ```
 
-Once installed, the plugin is autoloaded and ready to use. If you install `naf/database` too, it can store sessions in your database table instead of native PHP files.
+## License
 
----
-
-## Usage
-
-### Accessing the session
-
-Use the global `session()` helper to access the session storage:
-
-```php
-session()->set('user_id', 42);
-
-$userId = session()->get('user_id');
-```
-
-To remove a key:
-
-```php
-session()->forget('user_id');
-```
-
----
-
-### Flash messages
-
-Use flash messages to store data for the *next* request only (e.g. after a redirect):
-
-```php
-session()->flash('success', 'Profile updated.');
-```
-
-In the next request, access it using:
-
-```php
-<?php if ($message = session()->getFlash('success')): ?>
-    <p class="success"><?= $message ?></p>
-<?php endif; ?>
-```
-
-The message is then **automatically removed** after it has been read.
-
----
-
-## 🔍 Internals
-
-* Automatically starts `session_start()` for web requests, with hardened cookie parameters and domain normalization.
-* Offers `Session::regenerate()` so you can refresh the session ID during login flows without touching every request.
-* Flash data is stored in a dedicated key and removed after access.
-* Registers the `session()` helper and binds it in the service container.
-* Provides `DatabaseSessionHandler` when the database plugin is configured.
-* Registers the migration path with `naf/database` so `vendor/bin/nix migrate up/down` applies the session table changes.
-
----
-
-## Configuration
-
-`src/config.php` exposes the following keys:
-
-```php
-return [
-    'session' => [
-        'storage'             => 'default', // switch to 'database' when using naf/database
-        'trust_proxy_headers' => false,
-        'trusted_proxies'     => [],
-        'database_table'      => 'sessions',
-    ],
-];
-```
-
-To use the database handler:
-
-1. Install [naf/database](https://github.com/nafphp/database) and configure its `database` settings.
-2. Update the `session` config’s `storage` key to `database`.
-3. Run `vendor/bin/nix migrate up` (requires `naf/cli`) to apply the migration that creates the sessions table.
-
-## 🛠 Optional Usage in Controllers
-
-You can also access the session directly from the container:
-
-```php
-$session = app()->container()->get(Session::class);
-```
-
-But using the `session()` helper is the recommended way.
-
----
-
-
-## ✅ Requirements
-
-* `naf/framework` >= 0.1.0
-* `naf/database` >= 0.1.1 when enabling database session storage
-* MySQL >= 8.0.19 (required when using the database-backed handler)
-
----
-
-## 📄 License
-
-MIT License.
+MIT. Part of [NAF](https://github.com/nafphp/framework).
