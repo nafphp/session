@@ -36,3 +36,10 @@ composer require naf/session
 ## License
 
 MIT. Part of [NAF](https://github.com/nafphp/framework).
+
+
+## Unreleased Nafinity integration candidate
+
+Target branch: `v0.2.2-rc`. This behavior is not a published release yet.
+
+The database-session migration supports PostgreSQL, MySQL/MariaDB and SQLite. MariaDB session updates use separately bound update values instead of unsupported row-alias syntax. The database backend is tested through insert, repeated write, read and destroy against both application engines.

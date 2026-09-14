@@ -12,8 +12,7 @@ use function Naf\log;
 /**
  * Session handler backed by a sessions table.
  *
- * Requires MySQL 8.0.19+ when using the default driver because the upsert
- * relies on the `AS new` syntax that older versions do not support.
+ * Uses native upserts on MySQL/MariaDB, PostgreSQL and SQLite.
  */
 class DatabaseSessionHandler implements SessionHandlerInterface
 {
@@ -97,6 +96,12 @@ class DatabaseSessionHandler implements SessionHandlerInterface
             'user_agent'    => $agent,
             'user_id'       => $userId,
         ];
+
+        if ($this->driver === 'mysql') {
+            foreach (['payload', 'last_activity', 'ip', 'user_agent', 'user_id'] as $key) {
+                $bindings['update_' . $key] = $bindings[$key];
+            }
+        }
 
         try {
             $sql  = $this->buildUpsert();
@@ -194,20 +199,13 @@ class DatabaseSessionHandler implements SessionHandlerInterface
             );
         }
 
+        $updates = [];
+        foreach (['payload', 'last_activity', 'ip', 'user_agent', 'user_id'] as $key) {
+            $updates[] = $this->quoteIdentifier($this->columns[$key]) . ' = :update_' . $key;
+        }
         return sprintf(
-            'INSERT INTO %s (%s) VALUES (:id, :payload, :last_activity, :ip, :user_agent, :user_id) AS new ON DUPLICATE KEY UPDATE %s = new.%s, %s = new.%s, %s = new.%s, %s = new.%s, %s = new.%s',
-            $this->quoteIdentifier($this->table),
-            implode(', ', $fields),
-            $this->quoteIdentifier($this->columns['payload']),
-            $this->quoteIdentifier($this->columns['payload']),
-            $this->quoteIdentifier($this->columns['last_activity']),
-            $this->quoteIdentifier($this->columns['last_activity']),
-            $this->quoteIdentifier($this->columns['ip']),
-            $this->quoteIdentifier($this->columns['ip']),
-            $this->quoteIdentifier($this->columns['user_agent']),
-            $this->quoteIdentifier($this->columns['user_agent']),
-            $this->quoteIdentifier($this->columns['user_id']),
-            $this->quoteIdentifier($this->columns['user_id'])
+            'INSERT INTO %s (%s) VALUES (:id, :payload, :last_activity, :ip, :user_agent, :user_id) ON DUPLICATE KEY UPDATE %s',
+            $this->quoteIdentifier($this->table), implode(', ', $fields), implode(', ', $updates)
         );
     }
 
