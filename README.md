@@ -43,3 +43,9 @@ MIT. Part of [NAF](https://github.com/nafphp/framework).
 Target branch: `v0.2.2-rc`. This behavior is not a published release yet.
 
 The database-session migration supports PostgreSQL, MySQL/MariaDB and SQLite. MariaDB session updates use separately bound update values instead of unsupported row-alias syntax. The database backend is tested through insert, repeated write, read and destroy against both application engines.
+
+The real-engine regression is `tests/database-host.php`. In the disposable Nafinity
+Compose test host, run it with `NAF_SESSION_TEST_BOOTSTRAP=/workspace/app/bootstrap.php`.
+It requires `APP_ENV=test` and `DB_DATABASE=nafinity_test`, creates/validates the session
+schema and exercises native insert/update/read/destroy with an isolated random session ID.
+Run once with MariaDB and once with the PostgreSQL test connection.
