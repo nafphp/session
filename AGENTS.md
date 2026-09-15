@@ -55,3 +55,7 @@ storage handler. HTTP behavior must be checked across requests with an actual co
 No `analyse` script is declared.
 
 User docs: [Sessions](https://nafphp.github.io/docs/sessions/).
+
+Follow the shared [PHP code style](https://github.com/nafphp/docs/blob/main/CODE_STYLE.md)
+and `.php-cs-fixer.dist.php`. Run `composer style:check`; `composer style:fix` applies the rules.
+Keep logical steps and local names readable, preserving public signatures and template output.

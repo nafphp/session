@@ -8,11 +8,11 @@ use SessionHandlerInterface;
 
 class Session
 {
-    protected bool $started = false;
-    private bool $trustProxyHeaders = false;
-    private array $trustedProxies = [];
+    protected bool $started                          = false;
+    private bool $trustProxyHeaders                  = false;
+    private array $trustedProxies                    = [];
     private ?SessionHandlerInterface $sessionHandler = null;
-    private ?int $lastRegeneratedAt = null;
+    private ?int $lastRegeneratedAt                  = null;
 
     public function start(?callable $sessionHandler = null): void
     {
@@ -43,7 +43,7 @@ class Session
     public function configureProxyTrust(bool $trustProxyHeaders, array $trustedProxies = []): void
     {
         $this->trustProxyHeaders = $trustProxyHeaders;
-        $this->trustedProxies = $trustedProxies;
+        $this->trustedProxies    = $trustedProxies;
     }
 
     public function setSessionHandler(SessionHandlerInterface $handler): void
@@ -73,7 +73,7 @@ class Session
                 'secure'   => $cookieParams['secure'] ?? false,
                 'httponly' => $cookieParams['httponly'] ?? false,
                 'samesite' => $cookieParams['samesite'] ?? 'Lax',
-            ]
+            ],
         );
 
         unset($_COOKIE[session_name()]);
@@ -85,7 +85,7 @@ class Session
             || $this->isForwardedProtoTrusted();
 
         $rawHost = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? '';
-        $domain = $rawHost === '' ? '' : preg_replace('/:\\d+$/', '', trim($rawHost));
+        $domain  = $rawHost === '' ? '' : preg_replace('/:\\d+$/', '', trim($rawHost));
 
         return [
             'lifetime' => 0,
@@ -105,6 +105,7 @@ class Session
 
         if (empty($this->trustedProxies)) {
             trigger_error('Proxy headers trusted but no trusted proxies configured', E_USER_WARNING);
+
             return false;
         }
 
@@ -137,7 +138,7 @@ class Session
 
         session_regenerate_id(true);
         $_SESSION['_id_regenerated_at'] = time();
-        $this->lastRegeneratedAt = $_SESSION['_id_regenerated_at'];
+        $this->lastRegeneratedAt        = $_SESSION['_id_regenerated_at'];
     }
 
     public function set(string $key, mixed $value): void
@@ -154,6 +155,7 @@ class Session
     {
         $value = $this->get('__flash__.' . $key, $default);
         $this->forget('__flash__.' . $key);
+
         return $value;
     }
 

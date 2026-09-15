@@ -51,3 +51,10 @@ Compose test host, run it with `NAF_SESSION_TEST_BOOTSTRAP=/workspace/app/bootst
 It requires `APP_ENV=test` and `DB_DATABASE=nafinity_test`, creates/validates the session
 schema and exercises native insert/update/read/destroy with an isolated random session ID.
 Run once with MariaDB and once with the PostgreSQL test connection.
+
+## PHP code style
+
+Source, tests and PHP templates follow the shared [NAF code style](https://github.com/nafphp/docs/blob/main/CODE_STYLE.md)
+(PER Coding Style 3.0 with the Nafinity readability rules). After `composer install`, run
+`composer style:check` to verify formatting or `composer style:fix` to apply it. The formatter
+is a development dependency. Review template output and run the package checks after changes.
