@@ -41,6 +41,12 @@ class SessionTableMigration extends AbstractMigration
 
     private function createIndex(PDO $connection, string $sql): void
     {
+        if ($connection->getAttribute(PDO::ATTR_DRIVER_NAME) !== 'mysql') {
+            $connection->exec(str_replace('CREATE INDEX ', 'CREATE INDEX IF NOT EXISTS ', $sql));
+
+            return;
+        }
+
         try {
             $connection->exec($sql);
         } catch (PDOException $exception) {
@@ -48,11 +54,6 @@ class SessionTableMigration extends AbstractMigration
                 !(
                     $exception->getCode() === '42000'
                     && str_contains($exception->getMessage(), '1061')
-                )
-                && $exception->getCode() !== '42P07'
-                && !(
-                    $connection->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite'
-                    && str_contains($exception->getMessage(), 'already exists')
                 )
             ) {
                 throw $exception;

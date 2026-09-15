@@ -21,6 +21,19 @@ $handler = new DatabaseSessionHandler($pdo, 'sessions');
 $id      = 'naf-session-contract-' . bin2hex(random_bytes(12));
 
 try {
+    if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) !== 'mysql') {
+        $pdo->beginTransaction();
+
+        try {
+            $migration->up($pdo);
+            $migration->up($pdo);
+            if ((int) $pdo->query('SELECT 1')->fetchColumn() !== 1) {
+                throw new RuntimeException('Repeated session migration broke the transaction.');
+            }
+        } finally {
+            $pdo->rollBack();
+        }
+    }
     if (!$handler->write($id, 'first') || !$handler->write($id, 'updated')) {
         throw new RuntimeException('Session upsert failed.');
     }
