@@ -38,9 +38,7 @@ composer require naf/session
 MIT. Part of [NAF](https://github.com/nafphp/framework).
 
 
-## Unreleased Nafinity integration candidate
-
-Target branch: `v0.2.2-rc`. This behavior is not a published release yet.
+## Behavior notes
 
 Repeated session-table setup preserves PostgreSQL and SQLite transactions when indexes already exist.
 
