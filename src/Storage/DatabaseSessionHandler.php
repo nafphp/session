@@ -7,13 +7,13 @@ namespace Naf\Session\Storage;
 use PDO;
 use PDOException;
 use SessionHandlerInterface;
+
 use function Naf\log;
 
 /**
  * Session handler backed by a sessions table.
  *
- * Requires MySQL 8.0.19+ when using the default driver because the upsert
- * relies on the `AS new` syntax that older versions do not support.
+ * Uses native upserts on MySQL/MariaDB, PostgreSQL and SQLite.
  */
 class DatabaseSessionHandler implements SessionHandlerInterface
 {
@@ -24,19 +24,26 @@ class DatabaseSessionHandler implements SessionHandlerInterface
     /** @var callable|null */
     private $contextProvider = null;
 
-    public function __construct(PDO $connection, string $table, array $columns = [], ?callable $contextProvider = null)
-    {
+    public function __construct(
+        PDO $connection,
+        string $table,
+        array $columns = [],
+        ?callable $contextProvider = null,
+    ) {
         $this->connection = $connection;
         $this->driver     = strtolower((string) $connection->getAttribute(PDO::ATTR_DRIVER_NAME));
         $this->table      = $table;
-        $this->columns    = array_merge([
-            'id'            => 'id',
-            'payload'       => 'payload',
-            'last_activity' => 'last_activity',
-            'ip'            => 'ip_address',
-            'user_agent'    => 'user_agent',
-            'user_id'       => 'user_id',
-        ], $columns);
+        $this->columns    = array_merge(
+            [
+                'id'            => 'id',
+                'payload'       => 'payload',
+                'last_activity' => 'last_activity',
+                'ip'            => 'ip_address',
+                'user_agent'    => 'user_agent',
+                'user_id'       => 'user_id',
+            ],
+            $columns,
+        );
         $this->contextProvider = $contextProvider;
     }
 
@@ -53,13 +60,15 @@ class DatabaseSessionHandler implements SessionHandlerInterface
     public function read(string $id): string
     {
         try {
-            $stmt = $this->connection->prepare(sprintf(
-                'SELECT %s, %s FROM %s WHERE %s = :id',
-                $this->quoteIdentifier($this->columns['payload']),
-                $this->quoteIdentifier($this->columns['last_activity']),
-                $this->quoteIdentifier($this->table),
-                $this->quoteIdentifier($this->columns['id'])
-            ));
+            $stmt = $this->connection->prepare(
+                sprintf(
+                    'SELECT %s, %s FROM %s WHERE %s = :id',
+                    $this->quoteIdentifier($this->columns['payload']),
+                    $this->quoteIdentifier($this->columns['last_activity']),
+                    $this->quoteIdentifier($this->table),
+                    $this->quoteIdentifier($this->columns['id']),
+                ),
+            );
 
             $stmt->execute(['id' => $id]);
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -68,15 +77,17 @@ class DatabaseSessionHandler implements SessionHandlerInterface
                 return '';
             }
 
-            $lastActivity = (int)($result[$this->columns['last_activity']] ?? 0);
+            $lastActivity = (int) ($result[$this->columns['last_activity']] ?? 0);
             if ($this->isExpired($lastActivity)) {
                 $this->destroyIfLastActivityMatches($id, $lastActivity);
+
                 return '';
             }
 
-            return (string)($result[$this->columns['payload']] ?? '');
+            return (string) ($result[$this->columns['payload']] ?? '');
         } catch (PDOException $e) {
             \Naf\log()->error($e->getMessage());
+
             return '';
         }
     }
@@ -98,6 +109,12 @@ class DatabaseSessionHandler implements SessionHandlerInterface
             'user_id'       => $userId,
         ];
 
+        if ($this->driver === 'mysql') {
+            foreach (['payload', 'last_activity', 'ip', 'user_agent', 'user_id'] as $key) {
+                $bindings['update_' . $key] = $bindings[$key];
+            }
+        }
+
         try {
             $sql  = $this->buildUpsert();
             $stmt = $this->connection->prepare($sql);
@@ -105,6 +122,7 @@ class DatabaseSessionHandler implements SessionHandlerInterface
             return $stmt->execute($bindings);
         } catch (PDOException $e) {
             $this->log($e);
+
             return false;
         }
     }
@@ -112,15 +130,18 @@ class DatabaseSessionHandler implements SessionHandlerInterface
     public function destroy(string $id): bool
     {
         try {
-            $stmt = $this->connection->prepare(sprintf(
-                'DELETE FROM %s WHERE %s = :id',
-                $this->quoteIdentifier($this->table),
-                $this->quoteIdentifier($this->columns['id'])
-            ));
+            $stmt = $this->connection->prepare(
+                sprintf(
+                    'DELETE FROM %s WHERE %s = :id',
+                    $this->quoteIdentifier($this->table),
+                    $this->quoteIdentifier($this->columns['id']),
+                ),
+            );
 
             return $stmt->execute(['id' => $id]);
         } catch (PDOException $e) {
             $this->log($e);
+
             return false;
         }
     }
@@ -128,19 +149,22 @@ class DatabaseSessionHandler implements SessionHandlerInterface
     private function destroyIfLastActivityMatches(string $id, int $lastActivity): bool
     {
         try {
-            $stmt = $this->connection->prepare(sprintf(
-                'DELETE FROM %s WHERE %s = :id AND %s = :last_activity',
-                $this->quoteIdentifier($this->table),
-                $this->quoteIdentifier($this->columns['id']),
-                $this->quoteIdentifier($this->columns['last_activity'])
-            ));
+            $stmt = $this->connection->prepare(
+                sprintf(
+                    'DELETE FROM %s WHERE %s = :id AND %s = :last_activity',
+                    $this->quoteIdentifier($this->table),
+                    $this->quoteIdentifier($this->columns['id']),
+                    $this->quoteIdentifier($this->columns['last_activity']),
+                ),
+            );
 
             return $stmt->execute([
-                'id' => $id,
+                'id'            => $id,
                 'last_activity' => $lastActivity,
             ]);
         } catch (PDOException $e) {
             $this->log($e);
+
             return false;
         }
     }
@@ -150,16 +174,20 @@ class DatabaseSessionHandler implements SessionHandlerInterface
         $threshold = time() - $max_lifetime;
 
         try {
-            $stmt = $this->connection->prepare(sprintf(
-                'DELETE FROM %s WHERE %s < :threshold',
-                $this->quoteIdentifier($this->table),
-                $this->quoteIdentifier($this->columns['last_activity'])
-            ));
+            $stmt = $this->connection->prepare(
+                sprintf(
+                    'DELETE FROM %s WHERE %s < :threshold',
+                    $this->quoteIdentifier($this->table),
+                    $this->quoteIdentifier($this->columns['last_activity']),
+                ),
+            );
 
             $stmt->execute(['threshold' => $threshold]);
+
             return $stmt->rowCount();
         } catch (PDOException $e) {
             $this->log($e);
+
             return false;
         }
     }
@@ -190,34 +218,32 @@ class DatabaseSessionHandler implements SessionHandlerInterface
                 $this->quoteIdentifier($this->columns['user_agent']),
                 $this->quoteIdentifier($this->columns['user_agent']),
                 $this->quoteIdentifier($this->columns['user_id']),
-                $this->quoteIdentifier($this->columns['user_id'])
+                $this->quoteIdentifier($this->columns['user_id']),
             );
         }
 
+        $updates = [];
+        foreach (['payload', 'last_activity', 'ip', 'user_agent', 'user_id'] as $key) {
+            $updates[] = $this->quoteIdentifier($this->columns[$key]) . ' = :update_' . $key;
+        }
+
         return sprintf(
-            'INSERT INTO %s (%s) VALUES (:id, :payload, :last_activity, :ip, :user_agent, :user_id) AS new ON DUPLICATE KEY UPDATE %s = new.%s, %s = new.%s, %s = new.%s, %s = new.%s, %s = new.%s',
+            'INSERT INTO %s (%s) VALUES (:id, :payload, :last_activity, :ip, :user_agent, :user_id) ON DUPLICATE KEY UPDATE %s',
             $this->quoteIdentifier($this->table),
             implode(', ', $fields),
-            $this->quoteIdentifier($this->columns['payload']),
-            $this->quoteIdentifier($this->columns['payload']),
-            $this->quoteIdentifier($this->columns['last_activity']),
-            $this->quoteIdentifier($this->columns['last_activity']),
-            $this->quoteIdentifier($this->columns['ip']),
-            $this->quoteIdentifier($this->columns['ip']),
-            $this->quoteIdentifier($this->columns['user_agent']),
-            $this->quoteIdentifier($this->columns['user_agent']),
-            $this->quoteIdentifier($this->columns['user_id']),
-            $this->quoteIdentifier($this->columns['user_id'])
+            implode(', ', $updates),
         );
     }
 
     private function quoteIdentifier(string $identifier): string
     {
         $driver = $this->driver;
+
         return match ($driver) {
-            'pgsql',
-            'postgres',
-            'postgresql' => sprintf('"%s"', str_replace('"', '""', $identifier)),
+            'pgsql', 'postgres', 'postgresql' => sprintf(
+                '"%s"',
+                str_replace('"', '""', $identifier),
+            ),
             default => sprintf('`%s`', str_replace('`', '``', $identifier)),
         };
     }
@@ -225,9 +251,9 @@ class DatabaseSessionHandler implements SessionHandlerInterface
     private function resolveContext(): array
     {
         $fallback = [
-            'ip' => $_SERVER['REMOTE_ADDR'] ?? null,
+            'ip'         => $_SERVER['REMOTE_ADDR'] ?? null,
             'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
-            'user_id' => $_SESSION['user_id'] ?? $_SESSION['userId'] ?? null,
+            'user_id'    => $_SESSION['user_id'] ?? ($_SESSION['userId'] ?? null),
         ];
 
         if (null === $this->contextProvider) {
@@ -237,9 +263,9 @@ class DatabaseSessionHandler implements SessionHandlerInterface
         $context = (array) call_user_func($this->contextProvider);
 
         return [
-            'ip' => $context['ip'] ?? $fallback['ip'],
+            'ip'         => $context['ip'] ?? $fallback['ip'],
             'user_agent' => $context['user_agent'] ?? $fallback['user_agent'],
-            'user_id' => $context['user_id'] ?? $fallback['user_id'],
+            'user_id'    => $context['user_id'] ?? $fallback['user_id'],
         ];
     }
 
@@ -249,16 +275,18 @@ class DatabaseSessionHandler implements SessionHandlerInterface
             return true;
         }
 
-        $maxLifetime = (int)ini_get('session.gc_maxlifetime');
+        $maxLifetime = (int) ini_get('session.gc_maxlifetime');
         if ($maxLifetime <= 0) {
             $maxLifetime = 1440;
         }
 
-        return $lastActivity < (time() - $maxLifetime);
+        return $lastActivity < time() - $maxLifetime;
     }
 
     private function log(PDOException $exception): void
     {
-        log()->error('Session database error: ' . $exception->getMessage(), ['exception' => $exception]);
+        log()->error('Session database error: ' . $exception->getMessage(), [
+            'exception' => $exception,
+        ]);
     }
 }

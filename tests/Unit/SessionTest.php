@@ -7,12 +7,13 @@ namespace Tests\Unit;
 use Naf\Session\Core\Session;
 use Naf\Session\Storage\DatabaseSessionHandler;
 use PDO;
+use ReflectionMethod;
 use Tests\NafTestCase;
+
 use function Naf\Session\session;
 
 class SessionTest extends NafTestCase
 {
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -30,7 +31,9 @@ class SessionTest extends NafTestCase
     public function testSessionInternals()
     {
         $session = new Session();
-        $session->start(function() {return null;});
+        $session->start(function () {
+            return null;
+        });
         $session->set('foo', 'bar');
         $this->assertSame('bar', $session->get('foo'));
         $session->forget('foo');
@@ -40,7 +43,9 @@ class SessionTest extends NafTestCase
     public function testSessionFlashMessage()
     {
         $session = new Session();
-        $session->start(function() {return null;});
+        $session->start(function () {
+            return null;
+        });
 
         $session->flash('foo', 'bar');
         $this->assertSame('bar', $session->getFlash('foo'));
@@ -57,9 +62,9 @@ class SessionTest extends NafTestCase
         $session = new Session();
 
         $this->withServerEnvironment([
-            'HTTPS' => 'off',
+            'HTTPS'                  => 'off',
             'HTTP_X_FORWARDED_PROTO' => 'http',
-            'HTTP_HOST' => 'http.local',
+            'HTTP_HOST'              => 'http.local',
         ], function () use ($session) {
             $session->start();
 
@@ -78,10 +83,10 @@ class SessionTest extends NafTestCase
         $session = new Session();
 
         $this->withServerEnvironment([
-            'HTTPS' => 'on',
+            'HTTPS'                  => 'on',
             'HTTP_X_FORWARDED_PROTO' => null,
-            'HTTP_HOST' => 'direct.local',
-            'REMOTE_ADDR' => '198.51.100.5',
+            'HTTP_HOST'              => 'direct.local',
+            'REMOTE_ADDR'            => '198.51.100.5',
         ], function () use ($session) {
             $session->start();
 
@@ -100,10 +105,10 @@ class SessionTest extends NafTestCase
         $session = new Session();
 
         $this->withServerEnvironment([
-            'HTTPS' => 'off',
+            'HTTPS'                  => 'off',
             'HTTP_X_FORWARDED_PROTO' => 'https',
-            'HTTP_HOST' => 'proxy.local',
-            'REMOTE_ADDR' => '203.0.113.5',
+            'HTTP_HOST'              => 'proxy.local',
+            'REMOTE_ADDR'            => '203.0.113.5',
         ], function () use ($session) {
             $session->configureProxyTrust(true, ['203.0.113.5']);
             $session->start();
@@ -123,24 +128,24 @@ class SessionTest extends NafTestCase
         $session = new Session();
 
         $this->withServerEnvironment([
-            'HTTPS' => 'on',
+            'HTTPS'     => 'on',
             'HTTP_HOST' => 'clear.local',
         ], function () use ($session) {
             $session->start();
             $session->set('foo', 'bar');
 
-        $session->clear();
+            $session->clear();
 
-        $this->assertSame(PHP_SESSION_NONE, session_status());
-        $this->assertSame([], $_SESSION);
-        $this->assertFalse(isset($_COOKIE[session_name()]));
+            $this->assertSame(PHP_SESSION_NONE, session_status());
+            $this->assertSame([], $_SESSION);
+            $this->assertFalse(isset($_COOKIE[session_name()]));
         });
     }
 
     public function testDatabaseSessionHandlerPersistsPayload(): void
     {
         $connection = $this->createMemoryConnection();
-        $session = new Session();
+        $session    = new Session();
         $session->setSessionHandler(new DatabaseSessionHandler($connection, 'sessions'));
         $session->start();
 
@@ -155,39 +160,39 @@ class SessionTest extends NafTestCase
     public function testDatabaseSessionHandlerRejectsExpiredSessionOnRead(): void
     {
         $connection = $this->createMemoryConnection();
-        $handler = new DatabaseSessionHandler($connection, 'sessions');
-        $expiredAt = time() - ((int)ini_get('session.gc_maxlifetime') + 10);
+        $handler    = new DatabaseSessionHandler($connection, 'sessions');
+        $expiredAt  = time() - ((int) ini_get('session.gc_maxlifetime') + 10);
 
         $statement = $connection->prepare(
-            'INSERT INTO sessions (id, payload, last_activity) VALUES (:id, :payload, :last_activity)'
+            'INSERT INTO sessions (id, payload, last_activity) VALUES (:id, :payload, :last_activity)',
         );
         $statement->execute([
-            'id' => 'expired-session',
-            'payload' => 'foo|s:3:"bar";',
+            'id'            => 'expired-session',
+            'payload'       => 'foo|s:3:"bar";',
             'last_activity' => $expiredAt,
         ]);
 
         $this->assertSame('', $handler->read('expired-session'));
-        $this->assertSame(0, (int)$connection->query('SELECT COUNT(*) FROM sessions')->fetchColumn());
+        $this->assertSame(0, (int) $connection->query('SELECT COUNT(*) FROM sessions')->fetchColumn());
     }
 
     public function testDatabaseSessionHandlerDoesNotDestroyRenewedExpiredSession(): void
     {
         $connection = $this->createMemoryConnection();
-        $handler = new DatabaseSessionHandler($connection, 'sessions');
-        $expiredAt = time() - ((int)ini_get('session.gc_maxlifetime') + 10);
-        $renewedAt = time();
+        $handler    = new DatabaseSessionHandler($connection, 'sessions');
+        $expiredAt  = time() - ((int) ini_get('session.gc_maxlifetime') + 10);
+        $renewedAt  = time();
 
         $statement = $connection->prepare(
-            'INSERT INTO sessions (id, payload, last_activity) VALUES (:id, :payload, :last_activity)'
+            'INSERT INTO sessions (id, payload, last_activity) VALUES (:id, :payload, :last_activity)',
         );
         $statement->execute([
-            'id' => 'renewed-session',
-            'payload' => 'foo|s:3:"bar";',
+            'id'            => 'renewed-session',
+            'payload'       => 'foo|s:3:"bar";',
             'last_activity' => $renewedAt,
         ]);
 
-        $method = new \ReflectionMethod($handler, 'destroyIfLastActivityMatches');
+        $method = new ReflectionMethod($handler, 'destroyIfLastActivityMatches');
         $this->assertTrue($method->invoke($handler, 'renewed-session', $expiredAt));
 
         $row = $connection->query('SELECT payload, last_activity FROM sessions WHERE id = "renewed-session"')
@@ -195,24 +200,26 @@ class SessionTest extends NafTestCase
 
         $this->assertIsArray($row);
         $this->assertSame('foo|s:3:"bar";', $row['payload']);
-        $this->assertSame($renewedAt, (int)$row['last_activity']);
+        $this->assertSame($renewedAt, (int) $row['last_activity']);
     }
 
     public function testDatabaseSessionHandlerStoresCamelCaseUserIdContext(): void
     {
         $connection = $this->createMemoryConnection();
-        $handler = new DatabaseSessionHandler($connection, 'sessions');
+        $handler    = new DatabaseSessionHandler($connection, 'sessions');
 
         $_SESSION['userId'] = 42;
 
         $this->assertTrue($handler->write('user-session', 'userId|i:42;'));
-        $this->assertSame(42, (int)$connection->query('SELECT user_id FROM sessions LIMIT 1')->fetchColumn());
+        $this->assertSame(42, (int) $connection->query('SELECT user_id FROM sessions LIMIT 1')->fetchColumn());
     }
 
     public function testGetWithDefaultValue()
     {
         $session = new Session();
-        $session->start(function() {return null;});
+        $session->start(function () {
+            return null;
+        });
 
         $this->assertSame('default', $session->get('nonexistent', 'default'));
     }
@@ -220,7 +227,9 @@ class SessionTest extends NafTestCase
     public function testGetFlashWithDefaultValue()
     {
         $session = new Session();
-        $session->start(function() {return null;});
+        $session->start(function () {
+            return null;
+        });
 
         $this->assertSame('default', $session->getFlash('nonexistent', 'default'));
     }
@@ -228,7 +237,9 @@ class SessionTest extends NafTestCase
     public function testSetMultipleValues()
     {
         $session = new Session();
-        $session->start(function() {return null;});
+        $session->start(function () {
+            return null;
+        });
 
         $session->set('key1', 'value1');
         $session->set('key2', 'value2');
@@ -242,7 +253,9 @@ class SessionTest extends NafTestCase
     public function testSetOverwritesExistingValue()
     {
         $session = new Session();
-        $session->start(function() {return null;});
+        $session->start(function () {
+            return null;
+        });
 
         $session->set('foo', 'bar');
         $this->assertSame('bar', $session->get('foo'));
@@ -254,7 +267,9 @@ class SessionTest extends NafTestCase
     public function testForgetNonexistentKey()
     {
         $session = new Session();
-        $session->start(function() {return null;});
+        $session->start(function () {
+            return null;
+        });
 
         $session->forget('nonexistent');
         $this->assertNull($session->get('nonexistent'));
@@ -263,7 +278,9 @@ class SessionTest extends NafTestCase
     public function testFlashMultipleMessages()
     {
         $session = new Session();
-        $session->start(function() {return null;});
+        $session->start(function () {
+            return null;
+        });
 
         $session->flash('success', 'Operation successful');
         $session->flash('error', 'An error occurred');
@@ -275,7 +292,9 @@ class SessionTest extends NafTestCase
     public function testFlashMessageOnlyAvailableOnce()
     {
         $session = new Session();
-        $session->start(function() {return null;});
+        $session->start(function () {
+            return null;
+        });
 
         $session->flash('message', 'Hello');
         $session->getFlash('message');
@@ -286,7 +305,9 @@ class SessionTest extends NafTestCase
     public function testSetDifferentDataTypes()
     {
         $session = new Session();
-        $session->start(function() {return null;});
+        $session->start(function () {
+            return null;
+        });
 
         $session->set('string', 'text');
         $session->set('int', 42);
@@ -304,7 +325,9 @@ class SessionTest extends NafTestCase
     public function testFlashWithArray()
     {
         $session = new Session();
-        $session->start(function() {return null;});
+        $session->start(function () {
+            return null;
+        });
 
         $data = ['user' => 'john', 'action' => 'login'];
         $session->flash('event', $data);
@@ -315,7 +338,9 @@ class SessionTest extends NafTestCase
     public function testForgetDoesNotAffectOtherKeys()
     {
         $session = new Session();
-        $session->start(function() {return null;});
+        $session->start(function () {
+            return null;
+        });
 
         $session->set('keep', 'this');
         $session->set('remove', 'that');
@@ -329,7 +354,9 @@ class SessionTest extends NafTestCase
     public function testGetReturnsNullByDefault()
     {
         $session = new Session();
-        $session->start(function() {return null;});
+        $session->start(function () {
+            return null;
+        });
 
         $this->assertNull($session->get('nonexistent'));
     }
@@ -337,7 +364,9 @@ class SessionTest extends NafTestCase
     public function testSetWithNull()
     {
         $session = new Session();
-        $session->start(function() {return null;});
+        $session->start(function () {
+            return null;
+        });
 
         $session->set('nullable', null);
         $this->assertNull($session->get('nullable'));
@@ -346,7 +375,9 @@ class SessionTest extends NafTestCase
     public function testFlashDoesNotOverwriteRegularSessionData()
     {
         $session = new Session();
-        $session->start(function() {return null;});
+        $session->start(function () {
+            return null;
+        });
 
         $session->set('key', 'regular');
         $session->flash('key', 'flash');
@@ -357,10 +388,10 @@ class SessionTest extends NafTestCase
 
     public function testMultipleStartCallsWithCustomHandler()
     {
-        $session = new Session();
+        $session   = new Session();
         $callCount = 0;
 
-        $handler = function() use (&$callCount) {
+        $handler = function () use (&$callCount) {
             $callCount++;
         };
 
@@ -373,7 +404,9 @@ class SessionTest extends NafTestCase
     public function testSetWithEmptyString()
     {
         $session = new Session();
-        $session->start(function() {return null;});
+        $session->start(function () {
+            return null;
+        });
 
         $session->set('empty', '');
         $this->assertSame('', $session->get('empty'));
@@ -382,7 +415,9 @@ class SessionTest extends NafTestCase
     public function testGetDefaultWithFalseValue()
     {
         $session = new Session();
-        $session->start(function() {return null;});
+        $session->start(function () {
+            return null;
+        });
 
         $session->set('bool', false);
         $this->assertFalse($session->get('bool', true));
@@ -391,7 +426,9 @@ class SessionTest extends NafTestCase
     public function testGetDefaultWithZero()
     {
         $session = new Session();
-        $session->start(function() {return null;});
+        $session->start(function () {
+            return null;
+        });
 
         $session->set('zero', 0);
         $this->assertSame(0, $session->get('zero', 999));
@@ -400,18 +437,20 @@ class SessionTest extends NafTestCase
     private function createMemoryConnection(): PDO
     {
         $connection = new PDO('sqlite::memory:');
-        $connection->exec(<<<'SQL'
-            CREATE TABLE IF NOT EXISTS `sessions`
-            (
-                `id` VARCHAR(255) PRIMARY KEY,
-                `user_id` INT NULL,
-                `ip_address` VARCHAR(45) NULL,
-                `user_agent` TEXT NULL,
-                `payload` TEXT NOT NULL,
-                `last_activity` INT NOT NULL
-            );
-        SQL
+        $connection->exec(
+            <<<'SQL'
+                CREATE TABLE IF NOT EXISTS `sessions`
+                (
+                    `id` VARCHAR(255) PRIMARY KEY,
+                    `user_id` INT NULL,
+                    `ip_address` VARCHAR(45) NULL,
+                    `user_agent` TEXT NULL,
+                    `payload` TEXT NOT NULL,
+                    `last_activity` INT NOT NULL
+                );
+            SQL,
         );
+
         return $connection;
     }
 
@@ -440,5 +479,4 @@ class SessionTest extends NafTestCase
             $_SERVER = $original;
         }
     }
-
 }
