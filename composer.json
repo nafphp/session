@@ -38,7 +38,12 @@
     "style:fix": "@php vendor/bin/php-cs-fixer fix"
   },
   "extra": {
-    "mysql-version": ">=8.0.19"
+    "mysql-version": ">=8.0.19",
+    "naf": {
+      "boot": {
+        "after": ["naf/database"]
+      }
+    }
   },
   "config": {
     "platform": {
