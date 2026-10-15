@@ -13,6 +13,7 @@ class Session
     private array $trustedProxies                    = [];
     private ?SessionHandlerInterface $sessionHandler = null;
     private ?int $lastRegeneratedAt                  = null;
+    private ?string $cookieDomain                    = null;
 
     public function start(?callable $sessionHandler = null): void
     {
@@ -23,7 +24,7 @@ class Session
                         session_set_save_handler($this->sessionHandler, true);
                     }
                     session_set_cookie_params($this->getDefaultCookieParams());
-                    session_start();
+                    session_start(['use_strict_mode' => 1, 'use_only_cookies' => 1, 'use_trans_sid' => 0]);
                 }
             };
         }
@@ -49,6 +50,11 @@ class Session
     public function setSessionHandler(SessionHandlerInterface $handler): void
     {
         $this->sessionHandler = $handler;
+    }
+
+    public function configureCookieDomain(?string $domain): void
+    {
+        $this->cookieDomain = $domain;
     }
 
     public function clear(): void
@@ -84,13 +90,10 @@ class Session
         $secureCookie = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
             || $this->isForwardedProtoTrusted();
 
-        $rawHost = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? '';
-        $domain  = $rawHost === '' ? '' : preg_replace('/:\\d+$/', '', trim($rawHost));
-
         return [
             'lifetime' => 0,
             'path'     => '/',
-            'domain'   => $domain,
+            'domain'   => $this->cookieDomain ?? '',
             'secure'   => $secureCookie,
             'httponly' => true,
             'samesite' => 'Lax',

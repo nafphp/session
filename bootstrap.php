@@ -16,6 +16,7 @@ $container = app()->container();
 
 $container->set(Session::class, function () use ($container) {
     $session = new Session();
+    $session->configureCookieDomain(config('session:cookie_domain'));
 
     $session->configureProxyTrust(
         config('session:trust_proxy_headers', false),

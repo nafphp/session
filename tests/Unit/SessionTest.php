@@ -71,7 +71,7 @@ class SessionTest extends NafTestCase
             $params = session_get_cookie_params();
             $this->assertSame(0, $params['lifetime']);
             $this->assertSame('/', $params['path']);
-            $this->assertSame('http.local', $params['domain']);
+            $this->assertSame('', $params['domain']);
             $this->assertFalse($params['secure']);
             $this->assertTrue($params['httponly']);
             $this->assertSame('Lax', $params['samesite']);
@@ -93,7 +93,7 @@ class SessionTest extends NafTestCase
             $params = session_get_cookie_params();
             $this->assertSame(0, $params['lifetime']);
             $this->assertSame('/', $params['path']);
-            $this->assertSame('direct.local', $params['domain']);
+            $this->assertSame('', $params['domain']);
             $this->assertTrue($params['secure']);
             $this->assertTrue($params['httponly']);
             $this->assertSame('Lax', $params['samesite']);
@@ -116,7 +116,7 @@ class SessionTest extends NafTestCase
             $params = session_get_cookie_params();
             $this->assertSame(0, $params['lifetime']);
             $this->assertSame('/', $params['path']);
-            $this->assertSame('proxy.local', $params['domain']);
+            $this->assertSame('', $params['domain']);
             $this->assertTrue($params['secure']);
             $this->assertTrue($params['httponly']);
             $this->assertSame('Lax', $params['samesite']);
