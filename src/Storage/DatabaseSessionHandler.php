@@ -7,6 +7,7 @@ namespace Naf\Session\Storage;
 use PDO;
 use PDOException;
 use SessionHandlerInterface;
+use SessionUpdateTimestampHandlerInterface;
 
 use function Naf\log;
 
@@ -15,7 +16,7 @@ use function Naf\log;
  *
  * Uses native upserts on MySQL/MariaDB, PostgreSQL and SQLite.
  */
-class DatabaseSessionHandler implements SessionHandlerInterface
+class DatabaseSessionHandler implements SessionHandlerInterface, SessionUpdateTimestampHandlerInterface
 {
     private PDO $connection;
     private string $table;
@@ -125,6 +126,32 @@ class DatabaseSessionHandler implements SessionHandlerInterface
 
             return false;
         }
+    }
+
+    public function validateId(string $id): bool
+    {
+        try {
+            $statement = $this->connection->prepare(sprintf(
+                'SELECT %s FROM %s WHERE %s = :id',
+                $this->quoteIdentifier($this->columns['last_activity']),
+                $this->quoteIdentifier($this->table),
+                $this->quoteIdentifier($this->columns['id']),
+            ));
+            $statement->execute(['id' => $id]);
+            $lastActivity = $statement->fetchColumn();
+
+            return $lastActivity !== false && !$this->isExpired((int) $lastActivity);
+        } catch (PDOException $exception) {
+            $this->log($exception);
+
+            return false;
+        }
+    }
+
+    public function updateTimestamp(string $id, string $data): bool
+    {
+        // Also refresh request metadata when PHP skips an unchanged payload.
+        return $this->write($id, $data);
     }
 
     public function destroy(string $id): bool
